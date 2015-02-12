@@ -47,10 +47,10 @@ var TaskListItemComponent = React.createClass({
   displayName: "TaskListItemComponent",
 
   propTypes: {
+    appId: React.PropTypes.string.isRequired,
     hasHealth: React.PropTypes.bool,
     isActive: React.PropTypes.bool.isRequired,
     onToggle: React.PropTypes.func.isRequired,
-    onTaskDetailSelect: React.PropTypes.func.isRequired,
     task: React.PropTypes.object.isRequired
   },
 
@@ -66,16 +66,15 @@ var TaskListItemComponent = React.createClass({
     this.props.onToggle(this.props.task, event.target.checked);
   },
 
-  handleTaskDetailSelect: function (event) {
-    event.preventDefault();
-    this.props.onTaskDetailSelect(this.props.task);
-  },
-
   render: function () {
     var className = (this.props.isActive) ? "active" : "";
     var task = this.props.task;
     var hasHealth = !!this.props.hasHealth;
     var version = task.get("version").toISOString();
+    var taskId = task.get("id");
+    var taskUri = "#apps/" +
+      encodeURIComponent(this.props.appId) +
+      "/" + encodeURIComponent(taskId);
 
     var taskHealth = task.getHealth();
     var healthClassSet = React.addons.classSet({
@@ -108,8 +107,7 @@ var TaskListItemComponent = React.createClass({
             onChange={this.handleCheckboxClick} />
         </td>
         <td>
-            <a href="#"
-              onClick={this.handleTaskDetailSelect}>{task.get("id")}</a>
+            <a href={taskUri}>{taskId}</a>
           <br />
           {buildTaskAnchors(task)}
         </td>

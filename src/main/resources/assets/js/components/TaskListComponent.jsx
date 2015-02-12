@@ -53,6 +53,7 @@ var TaskListComponent = React.createClass({
     var tasksLength = this.props.tasks.length;
     var hasHealth = !!this.props.hasHealth;
     var hasError = this.props.fetchState === States.STATE_ERROR;
+    var appId = this.props.tasks.options.appId;
 
     // If there are no tasks, they can't all be selected. Otherwise, assume
     // they are all selected and let the iteration below decide if that is
@@ -102,14 +103,14 @@ var TaskListComponent = React.createClass({
               if (!isActive) { allTasksSelected = false; }
 
               return (
-                  <TaskListItemComponent
-                    isActive={isActive}
-                    key={task.id}
-                    taskHealthMessage={this.props.formatTaskHealthMessage(task)}
-                    onToggle={this.props.onTaskToggle}
-                    onTaskDetailSelect={this.props.onTaskDetailSelect}
-                    hasHealth={hasHealth}
-                    task={task} />
+                <TaskListItemComponent
+                  appId={appId}
+                  hasHealth={hasHealth}
+                  isActive={isActive}
+                  key={task.id}
+                  onToggle={this.props.onTaskToggle}
+                  task={task}
+                  taskHealthMessage={this.props.formatTaskHealthMessage(task)}/>
               );
             }, this)
           }
@@ -128,7 +129,10 @@ var TaskListComponent = React.createClass({
       <table className="table table-unstyled">
         <thead>
           <tr>
-            <th className={headerClassSet} width="1" onClick={this.handleThToggleClick}>
+            <th
+              className={headerClassSet}
+              width="1"
+              onClick={this.handleThToggleClick}>
               <input type="checkbox"
                 checked={allTasksSelected}
                 disabled={tasksLength === 0}
@@ -147,7 +151,9 @@ var TaskListComponent = React.createClass({
               </span>
             </th>
             <th className="text-right">
-              <span className={headerClassSet} onClick={this.sortCollectionBy.bind(null, "version")}>
+              <span
+                className={headerClassSet}
+                onClick={this.sortCollectionBy.bind(null, "version")}>
                 {(sortKey === "version") ? <span className="caret"></span> : null} Version
               </span>
             </th>

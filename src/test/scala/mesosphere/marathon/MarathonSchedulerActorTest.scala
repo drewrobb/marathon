@@ -12,6 +12,7 @@ import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._
 import mesosphere.marathon.tasks.{ TaskIdUtil, TaskQueue, TaskTracker }
+import mesosphere.marathon.upgrade.DeploymentManager.DeploymentFinished
 import mesosphere.marathon.upgrade.{ DeploymentPlan, DeploymentStep, StopApplication }
 import mesosphere.mesos.protos.Implicits._
 import mesosphere.mesos.protos.TaskID
@@ -165,7 +166,7 @@ class MarathonSchedulerActorTest extends TestKit(ActorSystem("System"))
     val schedulerActor = createActor()
     try {
       schedulerActor ! Start
-      schedulerActor ! ScaleApp("test-app".toPath, force = false)
+      schedulerActor ! ScaleApp("test-app".toPath)
 
       awaitAssert({
         verify(queue).add(app, 1)
@@ -207,12 +208,6 @@ class MarathonSchedulerActorTest extends TestKit(ActorSystem("System"))
     try {
       schedulerActor ! Start
       schedulerActor ! KillTasks(app.id, Set(taskA.getId), scale = true)
-      schedulerActor ! KillTasks(app.id, Set(taskA.getId), scale = true)
-
-      expectMsg(5.seconds, TasksKilled(app.id, Set(taskA.getId)))
-      expectMsg(5.seconds, TasksKilled(app.id, Set(taskA.getId)))
-
-      schedulerActor ! KillTasks(app.id, Set(taskA.getId), scale = true)
 
       expectMsg(5.seconds, TasksKilled(app.id, Set(taskA.getId)))
 
@@ -222,7 +217,7 @@ class MarathonSchedulerActorTest extends TestKit(ActorSystem("System"))
         verify(taskFailureEventRepository, times(1)).store(app.id, taskFailureEvent)
       }
 
-      verify(repo, times(3)).store(app.copy(instances = 0))
+      verify(repo, times(1)).store(app.copy(instances = 0))
     }
     finally {
       stopActor(schedulerActor)
@@ -401,6 +396,34 @@ class MarathonSchedulerActorTest extends TestKit(ActorSystem("System"))
       val answer = expectMsgType[CommandFailed]
       answer.cmd should equal(Deploy(plan))
       answer.reason.isInstanceOf[AppLockedException] should be(true)
+    }
+    finally {
+      stopActor(schedulerActor)
+    }
+  }
+
+  test("Forced deployment") {
+    val app = AppDefinition(id = PathId("app1"), cmd = Some("cmd"), instances = 2, upgradeStrategy = UpgradeStrategy(0.5), version = Timestamp(0))
+    val group = Group(PathId("/foo/bar"), Set(app))
+
+    val plan = DeploymentPlan(Group.empty, group)
+
+    when(repo.store(any())).thenReturn(Future.successful(app))
+    when(repo.currentVersion(app.id)).thenReturn(Future.successful(None))
+    when(tracker.get(app.id)).thenReturn(Set.empty[MarathonTask])
+    when(repo.expunge(app.id)).thenReturn(Future.successful(Nil))
+
+    val schedulerActor = createActor()
+    try {
+      schedulerActor ! Start
+      schedulerActor ! Deploy(plan)
+
+      expectMsgType[DeploymentStarted]
+
+      schedulerActor ! Deploy(plan, force = true)
+
+      val answer = expectMsgType[DeploymentStarted]
+
     }
     finally {
       stopActor(schedulerActor)

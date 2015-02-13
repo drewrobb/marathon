@@ -66,7 +66,7 @@ var Marathon = React.createClass({
 
     Mousetrap.bind("esc", function () {
       if (this.refs.modal != null) {
-        this.modalDestroy();
+        this.handleModalDestroy();
       }
     }.bind(this));
 
@@ -203,7 +203,7 @@ var Marathon = React.createClass({
     this.state.collection.create(appModel, options);
   },
 
-  modalDestroy: function () {
+  handleModalDestroy: function () {
     if (!this.state.modalClass) {
       return;
     }
@@ -415,7 +415,7 @@ var Marathon = React.createClass({
     /* jscs:disable disallowTrailingWhitespace, validateQuoteMarks, maximumLineLength */
     return (
       <AboutModalComponent
-        onDestroy={this.modalDestroy}
+        onDestroy={this.handleModalDestroy}
         ref="modal" />
     );
     /* jshint trailing:true, quotmark:true, newcap:true */
@@ -428,7 +428,7 @@ var Marathon = React.createClass({
     return (
       <NewAppModalComponent
         model={this.state.activeApp}
-        onDestroy={this.modalDestroy}
+        onDestroy={this.handleModalDestroy}
         onCreate={this.handleAppCreate}
         ref="modal" />
     );

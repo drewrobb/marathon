@@ -12,6 +12,12 @@ module.exports = React.createClass({
       tabs: React.PropTypes.array
     },
 
+    getDefaultProps: function () {
+      return {
+        tabs: []
+      }
+    },
+
     render: function () {
       var childNodes = React.Children.map(this.props.children,
         function (child) {
@@ -20,21 +26,19 @@ module.exports = React.createClass({
           });
         }, this);
 
+      var navTabsClassSet = React.addons.classSet({
+        "hidden": this.props.tabs.length === 0
+      });
+
       /* jshint trailing:false, quotmark:false, newcap:false */
       /* jscs:disable disallowTrailingWhitespace, validateQuoteMarks, maximumLineLength */
-      var nav;
-      if (this.props.tabs != null) {
-        nav = (
+      return (
+        <div className={this.props.className}>
           <NavTabsComponent
+            className={navTabsClassSet}
             activeTabId={this.props.activeTabId}
             onTabClick={this.props.onTabClick}
             tabs={this.props.tabs} />
-        );
-      }
-
-      return (
-        <div className={this.props.className}>
-          {nav}
           <div className="tab-content">
             {childNodes}
           </div>

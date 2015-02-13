@@ -36,18 +36,17 @@ var AppPageComponent = React.createClass({
     var appId = this.props.model.get("id");
     var activeTabId;
 
-    var tabs = _.reduce(tabsTemplate, function (current, tab) {
+    var tabs = _.map(tabsTemplate, function (tab) {
       var id = tab.id.replace(":appid", encodeURIComponent(appId));
       if (activeTabId == null) {
         activeTabId = id;
       }
-      current.push({
+
+      return {
         id: id,
         text: tab.text
-      });
-
-      return current;
-    }, []);
+      };
+    });
 
     return {
       activeViewIndex: 0,
@@ -59,22 +58,25 @@ var AppPageComponent = React.createClass({
   componentWillReceiveProps: function (nextProps) {
     var view = nextProps.view;
     var activeTabId = "apps/" + encodeURIComponent(this.props.model.get("id"));
-    var activeTask;
+    var activeTask = this.props.model.tasks.get(view);
+    var activeViewIndex = 0;
 
     if (view === "configuration") {
       activeTabId += "/configuration";
     }
-    else if (view != null) {
-      activeTask = this.props.model.tasks.get(view);
-      if (activeTask == null && this.state.activeTask != null) {
-        activeTask = this.state.activeTask;
-      }
+
+    if (view != null && activeTask == null) {
+      activeTask = this.state.activeTask;
+    }
+
+    if (activeTask != null) {
+      activeViewIndex = 1;
     }
 
     this.setState({
       activeTabId: activeTabId,
       activeTask: activeTask,
-      activeViewIndex: activeTask ? 1 : 0
+      activeViewIndex: activeViewIndex
     });
   },
 

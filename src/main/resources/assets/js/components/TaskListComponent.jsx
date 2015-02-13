@@ -48,75 +48,53 @@ var TaskListComponent = React.createClass({
     collection.sort();
   },
 
-  render: function () {
-    var taskNodes;
-    var tasksLength = this.props.tasks.length;
-    var hasHealth = !!this.props.hasHealth;
-    var hasError = this.props.fetchState === States.STATE_ERROR;
+  getTasks: function () {
     var appId = this.props.tasks.options.appId;
+    var hasHealth = !!this.props.hasHealth;
 
+    return (
+      this.props.tasks.map(function (task) {
+        var isActive = this.props.selectedTasks[task.id] === true;
+
+        /* jshint trailing:false, quotmark:false, newcap:false */
+        /* jscs:disable disallowTrailingWhitespace, validateQuoteMarks, maximumLineLength */
+        return (
+          <TaskListItemComponent
+            appId={appId}
+            hasHealth={hasHealth}
+            isActive={isActive}
+            key={task.id}
+            onToggle={this.props.onTaskToggle}
+            task={task}
+            taskHealthMessage={this.props.formatTaskHealthMessage(task)}/>
+        );
+        /* jshint trailing:true, quotmark:true, newcap:true */
+        /* jscs:enable disallowTrailingWhitespace, validateQuoteMarks, maximumLineLength */
+      }, this)
+    );
+  },
+
+  allTasksSelected: function (tasksLength) {
     // If there are no tasks, they can't all be selected. Otherwise, assume
     // they are all selected and let the iteration below decide if that is
     // true.
     var allTasksSelected = tasksLength > 0;
 
-    /* jshint trailing:false, quotmark:false, newcap:false */
-    /* jscs:disable disallowTrailingWhitespace, validateQuoteMarks, maximumLineLength */
-    if (this.props.fetchState === States.STATE_LOADING) {
-      taskNodes =
-        <tbody>
-          <tr>
-            <td className="text-center text-muted" colSpan="7">
-              Loading tasks...
-            </td>
-          </tr>
-        </tbody>;
-    } else if (tasksLength === 0 && !hasError) {
-      taskNodes =
-        <tbody>
-          <tr>
-            <td className="text-center" colSpan="7">
-              No tasks running.
-            </td>
-          </tr>
-        </tbody>;
-    } else {
-      taskNodes = (
-        <PagedContentComponent
-            currentPage={this.props.currentPage}
-            itemsPerPage={this.props.itemsPerPage}
-            tag="tbody" >
-          {
-            hasError ?
-              <tr>
-                <td className="text-center text-danger" colSpan="7">
-                  Error fetching tasks. Refresh the list to try again.
-                </td>
-              </tr> :
-              null
-          }
-          {
-            this.props.tasks.map(function (task) {
-              // Expicitly check for Boolean since the key might not exist in the
-              // object.
-              var isActive = this.props.selectedTasks[task.id] === true;
-              if (!isActive) { allTasksSelected = false; }
+    this.props.tasks.forEach(function (task) {
+      // Expicitly check for Boolean since the key might not exist in the
+      // object.
+      var isActive = this.props.selectedTasks[task.id] === true;
+      if (!isActive) { allTasksSelected = false; }
+    }, this);
 
-              return (
-                <TaskListItemComponent
-                  appId={appId}
-                  hasHealth={hasHealth}
-                  isActive={isActive}
-                  key={task.id}
-                  onToggle={this.props.onTaskToggle}
-                  task={task}
-                  taskHealthMessage={this.props.formatTaskHealthMessage(task)}/>
-              );
-            }, this)
-          }
-        </PagedContentComponent>
-      );
-    }
+    return allTasksSelected;
+  },
+
+  render: function () {
+    var tasksLength = this.props.tasks.length;
+    var allTasksSelected = this.allTasksSelected(tasksLength);
+    var hasHealth = !!this.props.hasHealth;
+    var hasError = this.props.fetchState === States.STATE_ERROR;
 
     var sortKey = this.props.tasks.sortKey;
 
@@ -125,6 +103,25 @@ var TaskListComponent = React.createClass({
       "dropup": this.props.tasks.sortReverse
     });
 
+    var loadingClassSet = React.addons.classSet({
+      "hidden": this.props.fetchState !== States.STATE_LOADING
+    });
+
+    var noTasksClassSet = React.addons.classSet({
+      "hidden": tasksLength !== 0 || hasError
+    });
+
+    var errorClassSet = React.addons.classSet({
+      "hidden": !hasError
+    });
+
+    var hasHealthClassSet = React.addons.classSet({
+      "text-center": true,
+      "hidden": !hasHealth
+    });
+
+    /* jshint trailing:false, quotmark:false, newcap:false */
+    /* jscs:disable disallowTrailingWhitespace, validateQuoteMarks, maximumLineLength */
     return (
       <table className="table table-unstyled">
         <thead>
@@ -163,19 +160,41 @@ var TaskListComponent = React.createClass({
                 {(sortKey === "updatedAt") ? <span className="caret"></span> : null} Updated
               </span>
             </th>
-            {
-              hasHealth ?
-                <th className="text-center">
-                  <span onClick={this.sortCollectionBy.bind(null, "getHealth")}
-                        className={headerClassSet}>
-                    {(sortKey === "getHealth") ? <span className="caret"></span> : null} Health
-                  </span>
-                </th> :
-                null
-            }
+              <th className={hasHealthClassSet}>
+                <span onClick={this.sortCollectionBy.bind(null, "getHealth")}
+                      className={headerClassSet}>
+                  {(sortKey === "getHealth") ? <span className="caret"></span> : null} Health
+                </span>
+              </th>
           </tr>
         </thead>
-        {taskNodes}
+        <tbody className={loadingClassSet}>
+          <tr>
+            <td className="text-center text-muted" colSpan="7">
+              Loading tasks...
+            </td>
+          </tr>
+        </tbody>
+        <tbody className={noTasksClassSet}>
+          <tr>
+            <td className="text-center" colSpan="7">
+              No tasks running.
+            </td>
+          </tr>
+        </tbody>
+        <tbody className={errorClassSet}>
+          <tr>
+            <td className="text-center text-danger" colSpan="7">
+              Error fetching tasks. Refresh the list to try again.
+            </td>
+          </tr>
+        </tbody>
+        <PagedContentComponent
+            currentPage={this.props.currentPage}
+            itemsPerPage={this.props.itemsPerPage}
+            tag="tbody" >
+          {this.getTasks()}
+        </PagedContentComponent>
       </table>
     );
   }
